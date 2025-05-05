@@ -1,380 +1,552 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'screens/home_page.dart';
+import 'screens/user_profile_page.dart';
+import 'screens/schedule_page.dart';
+import 'screens/category_detail_page.dart';
+import 'screens/profile_screen.dart';
+import 'screens/discount/discount_details_page.dart';
+import 'widgets/custom_header.dart';
+import 'widgets/custom_drawer.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '혜택 검색',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
       ),
-      home: const HomePage(),
+    );
+
+    return MaterialApp(
+      title: 'SNAG THE DEAL',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.grey,
+        scaffoldBackgroundColor: Colors.white,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          elevation: 0.5,
+          iconTheme: IconThemeData(color: Colors.black),
+          titleTextStyle: TextStyle(
+            color: Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomePage(),
+        '/schedule': (context) => const SchedulePage(),
+        '/discount-details':
+            (context) => const DiscountDetailsPage(mainCategory: '음식'),
+        '/category':
+            (context) => const CategoryDetailPage(
+              categoryName: '전체',
+              categoryIcon: Icons.category,
+            ),
+        '/profile': (context) => const ProfileScreen(),
+        '/settings':
+            (context) => Scaffold(
+              appBar: AppBar(title: const Text('설정')),
+              body: const Center(child: Text('설정 페이지')),
+            ),
+        '/app-info':
+            (context) => Scaffold(
+              appBar: AppBar(title: const Text('앱 정보')),
+              body: const Center(child: Text('앱 버전: 1.0.0')),
+            ),
+      },
     );
   }
 }
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class HomePage extends StatelessWidget {
+  const HomePage({Key? key}) : super(key: key);
 
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  final List<Category> categories = [
-    Category('음식', Icons.restaurant, [
-      Subcategory('한식', [
-        Store('본죽', true),
-        Store('명동찌개마을', true),
-        Store('김밥천국', false),
-      ]),
-      Subcategory('중식', [Store('홍콩반점', true), Store('교동짬뽕', false)]),
-      Subcategory('양식', [
-        Store('아웃백', true),
-        Store('빕스', true),
-        Store('맥도날드', false),
-      ]),
-      Subcategory('일식', [Store('스시로', true), Store('미소야', false)]),
-    ]),
-    Category('카페', Icons.coffee, [
-      Subcategory('프랜차이즈', [
-        Store('스타벅스', true),
-        Store('투썸플레이스', true),
-        Store('이디야', false),
-      ]),
-      Subcategory('개인카페', [Store('동네카페', false)]),
-    ]),
-    Category('교통', Icons.directions_car, [
-      Subcategory('버스', [Store('시내버스', true), Store('고속버스', false)]),
-      Subcategory('택시', [Store('카카오택시', true), Store('일반택시', false)]),
-      Subcategory('비행기', [
-        Store('대한항공', true),
-        Store('아시아나', true),
-        Store('제주항공', false),
-      ]),
-    ]),
-    Category('쇼핑', Icons.shopping_bag, [
-      Subcategory('마트', [
-        Store('이마트', true),
-        Store('홈플러스', true),
-        Store('롯데마트', false),
-      ]),
-      Subcategory('백화점', [
-        Store('롯데백화점', true),
-        Store('신세계백화점', true),
-        Store('현대백화점', false),
-      ]),
-    ]),
-  ];
+  static final ValueNotifier<bool> isCalendarLinked = ValueNotifier<bool>(
+    false,
+  );
 
   @override
   Widget build(BuildContext context) {
+    final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+
     return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('혜택 검색'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        title: Image.asset('assets/images/logo.png', height: 30),
+        centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.person),
+            icon: const Icon(Icons.menu, color: Colors.black),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const UserProfilePage(),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.calendar_month),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SchedulePage()),
-              );
+              scaffoldKey.currentState?.openEndDrawer();
             },
           ),
         ],
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 1.5,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-        ),
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          return _buildCategoryCard(category);
-        },
-      ),
-    );
-  }
-
-  Widget _buildCategoryCard(Category category) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SubcategoryPage(category: category),
-          ),
-        );
-      },
-      child: Card(
-        elevation: 4,
+      endDrawer: const CustomDrawer(),
+      body: SingleChildScrollView(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(category.icon, size: 48, color: Colors.blue),
-            const SizedBox(height: 8),
-            Text(
-              category.name,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            _buildRecommendedSection(),
+            _buildCategorySection(),
+            _buildCalendarSection(),
           ],
         ),
       ),
     );
   }
-}
 
-class SubcategoryPage extends StatelessWidget {
-  final Category category;
+  Widget _buildRecommendedSection() {
+    final List<Map<String, dynamic>> recommendations = [
+      {
+        'image': 'assets/images/starbucks.png',
+        'title': '스타벅스',
+        'discount': '2,000원 즉시할인',
+        'description': '아메리카노 주문 시',
+        'category': '카페',
+      },
+      {
+        'image': 'assets/images/burgerking.png',
+        'title': '버거킹',
+        'discount': '3,000원 즉시할인',
+        'description': '와퍼 주문 시',
+        'category': '음식',
+      },
+      {
+        'image': 'assets/images/subway.png',
+        'title': '서브웨이',
+        'discount': '4,000원 즉시할인',
+        'description': '15cm 샌드위치 주문 시',
+        'category': '음식',
+      },
+    ];
 
-  const SubcategoryPage({super.key, required this.category});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${category.name} 카테고리'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: ListView.builder(
-        itemCount: category.subcategories.length,
-        itemBuilder: (context, index) {
-          final subcategory = category.subcategories[index];
-          return ExpansionTile(
-            title: Text(
-              subcategory.name,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            children:
-                subcategory.stores.map((store) {
-                  return ListTile(
-                    title: Text(store.name),
-                    enabled: store.hasDiscount,
-                    textColor: store.hasDiscount ? null : Colors.grey,
-                    trailing:
-                        store.hasDiscount
-                            ? const Icon(Icons.arrow_forward_ios, size: 16)
-                            : const Text(
-                              '혜택 없음',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                    onTap:
-                        store.hasDiscount
-                            ? () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => DiscountDetailsPage(
-                                        storeName: store.name,
-                                        categoryName: category.name,
-                                      ),
-                                ),
-                              );
-                            }
-                            : null,
-                  );
-                }).toList(),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class DiscountDetailsPage extends StatefulWidget {
-  final String storeName;
-  final String categoryName;
-
-  const DiscountDetailsPage({
-    super.key,
-    required this.storeName,
-    required this.categoryName,
-  });
-
-  @override
-  State<DiscountDetailsPage> createState() => _DiscountDetailsPageState();
-}
-
-class _DiscountDetailsPageState extends State<DiscountDetailsPage> {
-  DateTime selectedDate = DateTime.now();
-  TimeOfDay selectedTime = TimeOfDay.now();
-  List<Discount> discounts = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadDiscounts();
-  }
-
-  void _loadDiscounts() {
-    // 실제로는 서버나 DB에서 가져와야 하지만, 샘플로 더미 데이터 사용
-    setState(() {
-      if (widget.storeName == '스타벅스') {
-        discounts = [
-          Discount('SKT 멤버십 20% 할인', '매일 1회, 최대 4,000원', '2024-12-31'),
-          Discount('네이버페이 결제 시 5% 적립', '결제 금액의 5% 적립', '2024-10-31'),
-          Discount('아메리카노 1+1', '오후 2시~5시', '2024-09-30'),
-        ];
-      } else if (widget.storeName == '아웃백') {
-        discounts = [
-          Discount('현대카드 30% 할인', '월 1회, 최대 15,000원', '2024-12-31'),
-          Discount('SK멤버십 15% 할인', '최대 10,000원', '2024-11-30'),
-        ];
-      } else {
-        discounts = [
-          Discount('기본 10% 할인', '모든 결제 시 적용', '2024-12-31'),
-          Discount('카카오페이 5% 추가 할인', '결제 금액의 5%', '2024-10-31'),
-        ];
-      }
-    });
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2025),
-    );
-    if (picked != null && picked != selectedDate) {
-      setState(() {
-        selectedDate = picked;
-      });
-    }
-  }
-
-  Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: selectedTime,
-    );
-    if (picked != null && picked != selectedTime) {
-      setState(() {
-        selectedTime = picked;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${widget.storeName} 혜택'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () => _selectDate(context),
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: '날짜',
-                        border: OutlineInputBorder(),
-                      ),
-                      child: Text(
-                        '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}',
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: InkWell(
-                    onTap: () => _selectTime(context),
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: '시간',
-                        border: OutlineInputBorder(),
-                      ),
-                      child: Text(
-                        '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}',
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            '당신을 위한 추천 혜택',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const Divider(),
-          Expanded(
-            child: ListView.builder(
-              itemCount: discounts.length,
-              itemBuilder: (context, index) {
-                final discount = discounts[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+        ),
+        SizedBox(
+          height: 200,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: recommendations.length,
+            itemBuilder: (context, index) {
+              final recommendation = recommendations[index];
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => DiscountDetailsPage(
+                            mainCategory: recommendation['category'],
+                            initialStore: recommendation['title'],
+                          ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 160,
+                  margin: const EdgeInsets.only(right: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
                   ),
-                  child: ListTile(
-                    title: Text(
-                      discount.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(discount.description),
-                        Text('유효기간: ${discount.expiryDate}'),
-                      ],
-                    ),
-                    trailing: ElevatedButton(
-                      child: const Text('사용하기'),
-                      onPressed: () {
-                        _scheduleDiscount(discount);
-                      },
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.store,
+                            size: 40,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              recommendation['title'],
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              recommendation['discount'],
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.blue[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              recommendation['description'],
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategorySection() {
+    final List<Map<String, dynamic>> categories = [
+      {'icon': Icons.restaurant, 'label': '음식'},
+      {'icon': Icons.coffee, 'label': '카페'},
+      {'icon': Icons.local_taxi, 'label': '교통'},
+      {'icon': Icons.shopping_bag, 'label': '쇼핑'},
+      {'icon': Icons.movie, 'label': '문화'},
+      {'icon': Icons.sports_basketball, 'label': '스포츠'},
+      {'icon': Icons.spa, 'label': '뷰티'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            '카테고리별 맞춤 혜택',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            childAspectRatio: 1,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: categories.length,
+          itemBuilder: (context, index) {
+            final category = categories[index];
+            return InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => DiscountDetailsPage(
+                          mainCategory: category['label'],
+                        ),
                   ),
                 );
               },
-            ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(category['icon'], size: 32, color: Colors.black87),
+                    const SizedBox(height: 8),
+                    Text(
+                      category['label'],
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCalendarSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            '스케줄',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
+        ),
+        Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: ValueListenableBuilder<bool>(
+            valueListenable: isCalendarLinked,
+            builder: (context, isLinked, child) {
+              if (!isLinked) {
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today, size: 24),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '캘린더에 일정 등록하고',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                              Text(
+                                '관련 할인 정보 알림 받자!',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () {
+                          isCalendarLinked.value = true;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('구글 캘린더가 연동되었습니다.'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          '구글 캘린더 연동하기',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                return CalendarWidget();
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class CategoryPage extends StatelessWidget {
+  final String category;
+
+  const CategoryPage({Key? key, required this.category}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(category), centerTitle: true),
+      body: Column(
+        children: [_buildSubcategoryTabs(), Expanded(child: _buildStoreList())],
+      ),
+    );
+  }
+
+  Widget _buildSubcategoryTabs() {
+    return Container(
+      height: 50,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          _buildTabItem('전체', isSelected: true),
+          _buildTabItem('한식'),
+          _buildTabItem('중식'),
+          _buildTabItem('일식'),
+          _buildTabItem('양식'),
+          _buildTabItem('카페'),
         ],
       ),
     );
   }
 
-  void _scheduleDiscount(Discount discount) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${widget.storeName}의 ${discount.title} 일정이 추가되었습니다.'),
-        duration: const Duration(seconds: 2),
+  Widget _buildTabItem(String label, {bool isSelected = false}) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.blue : Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isSelected ? Colors.blue : Colors.grey.shade300,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.black,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
       ),
     );
+  }
 
-    // 여기서 실제로는 일정 저장 로직이 들어가야 함
-    // 마운트 상태 체크 추가
-    Navigator.of(context).pop();
+  Widget _buildStoreList() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 10,
+      itemBuilder: (context, index) {
+        return Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: Colors.grey.shade300),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            title: Text('가게 ${index + 1}'),
+            subtitle: const Text('할인 정보가 들어갑니다'),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class CalendarWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [_buildCalendarHeader(), _buildCalendarGrid()]);
+  }
+
+  Widget _buildCalendarHeader() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(icon: const Icon(Icons.chevron_left), onPressed: () {}),
+          const Text(
+            '2025년 5월',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          IconButton(icon: const Icon(Icons.chevron_right), onPressed: () {}),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalendarGrid() {
+    final List<String> days = ['일', '월', '화', '수', '목', '금', '토'];
+    final int daysInMay2025 = 31;
+    final int firstDayOfMay2025 = 4; // 2025년 5월 1일은 목요일
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 7,
+        childAspectRatio: 1,
+      ),
+      itemCount: 7 + daysInMay2025 + firstDayOfMay2025,
+      itemBuilder: (context, index) {
+        if (index < 7) {
+          // 요일 표시
+          return Center(
+            child: Text(
+              days[index],
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          );
+        }
+
+        // 첫 주 빈 칸
+        if (index < 7 + firstDayOfMay2025) {
+          return const Center(child: Text(''));
+        }
+
+        // 날짜 표시
+        final date = index - 7 - firstDayOfMay2025 + 1;
+        if (date > daysInMay2025) {
+          return const Center(child: Text(''));
+        }
+
+        return Center(
+          child: Text(
+            date.toString(),
+            style: const TextStyle(color: Colors.black),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -503,9 +675,40 @@ class SchedulePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('내 일정'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_today),
+            onPressed: () {
+              _showGoogleCalendarDialog(context);
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
+          // 구글 캘린더 연동 상태 표시 배너
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.blue.shade50,
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_month, color: Colors.blue),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    '구글 캘린더와 연동하여 할인 일정을 자동으로 관리하세요!',
+                    style: TextStyle(color: Colors.blue),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    _showGoogleCalendarDialog(context);
+                  },
+                  child: const Text('연동하기'),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: ListView.builder(
               itemCount: schedules.length,
@@ -521,11 +724,22 @@ class SchedulePage extends StatelessWidget {
                     subtitle: Text(
                       '${schedule.dateTime.year}-${schedule.dateTime.month.toString().padLeft(2, '0')}-${schedule.dateTime.day.toString().padLeft(2, '0')} ${schedule.dateTime.hour.toString().padLeft(2, '0')}:${schedule.dateTime.minute.toString().padLeft(2, '0')}\n${schedule.location}',
                     ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () {
-                        // 일정 삭제 로직 구현
-                      },
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.calendar_today, size: 20),
+                          onPressed: () {
+                            _showAddToGoogleCalendarDialog(context, schedule);
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () {
+                            // 일정 삭제 로직 구현
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -536,11 +750,126 @@ class SchedulePage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // 추천 혜택 팝업 표시
           _showRecommendation(context);
         },
         child: const Icon(Icons.lightbulb),
       ),
+    );
+  }
+
+  void _showGoogleCalendarDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('구글 캘린더 연동'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('구글 캘린더와 연동하면 다음과 같은 기능을 사용할 수 있습니다:'),
+              const SizedBox(height: 12),
+              _buildFeatureItem('할인 일정 자동 동기화'),
+              _buildFeatureItem('알림 설정 관리'),
+              _buildFeatureItem('일정 충돌 확인'),
+              const SizedBox(height: 16),
+              const Text(
+                '연동을 위해 구글 계정 로그인이 필요합니다.',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('취소'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('구글 캘린더와 연동되었습니다.'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: const Text('연동하기'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFeatureItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle, color: Colors.green, size: 20),
+          const SizedBox(width: 8),
+          Text(text),
+        ],
+      ),
+    );
+  }
+
+  void _showAddToGoogleCalendarDialog(BuildContext context, Schedule schedule) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('구글 캘린더에 추가'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('일정: ${schedule.title}'),
+              const SizedBox(height: 8),
+              Text('날짜: ${schedule.dateTime.toString().split('.')[0]}'),
+              Text('장소: ${schedule.location}'),
+              const SizedBox(height: 16),
+              const Text('알림 설정:'),
+              const SizedBox(height: 8),
+              _buildReminderOption('10분 전'),
+              _buildReminderOption('30분 전'),
+              _buildReminderOption('1시간 전'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('취소'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('구글 캘린더에 일정이 추가되었습니다.'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: const Text('추가'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildReminderOption(String text) {
+    return Row(
+      children: [
+        Checkbox(value: true, onChanged: (bool? value) {}),
+        Text(text),
+      ],
     );
   }
 

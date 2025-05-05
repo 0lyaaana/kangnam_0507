@@ -1,102 +1,211 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/models/schedule.dart';
 
-class SchedulePage extends StatelessWidget {
+class SchedulePage extends StatefulWidget {
   const SchedulePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // 간단한 일정 목록 (실제로는 DB에서 가져와야 함)
-    final List<Schedule> schedules = [
-      Schedule(
-        '스타벅스 - SKT 멤버십 20% 할인',
-        DateTime.now().add(const Duration(days: 1)),
-        '강남점',
-      ),
-      Schedule(
-        '아웃백 - 현대카드 30% 할인',
-        DateTime.now().add(const Duration(days: 3)),
-        '코엑스점',
-      ),
-    ];
+  State<SchedulePage> createState() => _SchedulePageState();
+}
 
+class _SchedulePageState extends State<SchedulePage> {
+  bool _isGoogleConnected = false;
+  final List<Schedule> schedules = [
+    Schedule(
+      '스타벅스 - SKT 멤버십 20% 할인',
+      DateTime.now().add(const Duration(days: 1)),
+      '강남점',
+    ),
+    Schedule(
+      '아웃백 - 현대카드 30% 할인',
+      DateTime.now().add(const Duration(days: 3)),
+      '코엑스점',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('내 일정'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('스케줄'),
+        backgroundColor: Colors.white,
+        elevation: 1,
       ),
       body: Column(
         children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: schedules.length,
-              itemBuilder: (context, index) {
-                final schedule = schedules[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: ListTile(
-                    title: Text(schedule.title),
-                    subtitle: Text(
-                      '${schedule.dateTime.year}-${schedule.dateTime.month.toString().padLeft(2, '0')}-${schedule.dateTime.day.toString().padLeft(2, '0')} ${schedule.dateTime.hour.toString().padLeft(2, '0')}:${schedule.dateTime.minute.toString().padLeft(2, '0')}\n${schedule.location}',
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Google 캘린더 연동',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () {
-                        // 일정 삭제 로직 구현
+                    Switch(
+                      value: _isGoogleConnected,
+                      onChanged: (value) {
+                        setState(() {
+                          _isGoogleConnected = value;
+                        });
+                        if (value) {
+                          _connectGoogleCalendar();
+                        } else {
+                          _disconnectGoogleCalendar();
+                        }
                       },
                     ),
-                  ),
-                );
-              },
+                  ],
+                ),
+                Text(
+                  _isGoogleConnected
+                      ? '연동된 계정: user@gmail.com'
+                      : '캘린더 연동 시 자동으로 일정이 동기화됩니다.',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+              ],
             ),
           ),
+          const Divider(height: 1),
+          if (_isGoogleConnected)
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: schedules.length,
+                itemBuilder: (context, index) {
+                  final schedule = schedules[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            schedule.title,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_today,
+                                size: 16,
+                                color: Colors.blue,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _formatDate(schedule.dateTime),
+                                style: TextStyle(color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 16,
+                                color: Colors.red,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                schedule.location,
+                                style: TextStyle(color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            )
+          else
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Google 캘린더와 연동하여\n할인 일정을 관리해보세요.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isGoogleConnected = true;
+                        });
+                        _connectGoogleCalendar();
+                      },
+                      child: const Text(
+                        'Google 계정 연동하기',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // 추천 혜택 팝업 표시
-          _showRecommendation(context);
-        },
-        child: const Icon(Icons.lightbulb),
       ),
     );
   }
 
-  void _showRecommendation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('혜택 추천'),
-          content: const Text(
-            '오늘 점심시간 12시에 회의가 있습니다. 회의 장소 근처에 스타벅스에서 네이버페이 결제 시 10% 할인 혜택이 있습니다. 일정을 11시 30분으로 변경하여 혜택을 받으시겠습니까?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('아니오'),
-            ),
-            TextButton(
-              onPressed: () {
-                // 일정 변경 로직
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('일정이 변경되었습니다.'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              child: const Text('예'),
-            ),
-          ],
-        );
-      },
+  String _formatDate(DateTime date) {
+    return '${date.year}년 ${date.month}월 ${date.day}일';
+  }
+
+  void _connectGoogleCalendar() {
+    // TODO: Implement Google Calendar connection
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Google 캘린더가 연동되었습니다.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _disconnectGoogleCalendar() {
+    // TODO: Implement Google Calendar disconnection
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Google 캘린더 연동이 해제되었습니다.'),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }
